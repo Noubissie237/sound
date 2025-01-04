@@ -6,6 +6,8 @@ import 'package:sound/services/audio_player_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 
+import 'package:sound/widgets/mini_player.dart';
+
 class SongList extends StatefulWidget {
   const SongList({super.key});
 
@@ -18,11 +20,23 @@ class _SongListState extends State<SongList> {
   final AudioPlayerService _playerService = AudioPlayerService();
   List<Song> _songs = [];
   Song? _currentSong;
+  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _loadSongs();
+    _setupAudioPlayerListeners();
+  }
+
+  void _setupAudioPlayerListeners() {
+    _playerService.currentSongStream.listen((song) {
+      if (mounted) {
+        setState(() {
+          _currentSong = song;
+        });
+      }
+    });
   }
 
   Future<void> _loadSongs() async {
@@ -269,62 +283,84 @@ class _SongListState extends State<SongList> {
       );
     }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            '${_songs.length} songs found',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              '${_songs.length} songs found',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _songs.length,
-            itemBuilder: (context, index) {
-              final song = _songs[index];
-              final isPlaying = _currentSong?.id == song.id;
+          Expanded(
+            child: ListView.builder(
+              itemCount: _songs.length,
+              itemBuilder: (context, index) {
+                final song = _songs[index];
+                final isCurrentSong = _currentSong?.id == song.id;
 
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text('${index + 1}'),
-                ),
-                title: Text(
-                  song.title,
-                  style: TextStyle(
-                    color: isPlaying ? Theme.of(context).primaryColor : null,
-                  ),
-                ),
-                subtitle: Text(song.artist),
-                trailing: IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () => _showSongOptions(song, index),
-                ),
-                onTap: () async {
-                  final index = _songs.indexOf(song);
-                  _playerService.playlistManager
-                      .setPlaylist(_songs, startIndex: index);
-                  await _playerService.playSong(song);
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PlayerScreen(
-                          song: song,
-                          playerService: _playerService,
-                        ),
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        isCurrentSong ? Theme.of(context).primaryColor : null,
+                    child: Text(
+                      '${index + 1}',
+                      style: TextStyle(
+                        color: isCurrentSong ? Colors.white : null,
                       ),
-                    );
-                  }
-                },
-              );
-            },
+                    ),
+                  ),
+                  title: Text(
+                    song.title,
+                    style: TextStyle(
+                      color:
+                          isCurrentSong ? Theme.of(context).primaryColor : null,
+                      fontWeight: isCurrentSong ? FontWeight.bold : null,
+                    ),
+                  ),
+                  subtitle: Text(song.artist),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () => _showSongOptions(song, index),
+                  ),
+                  onTap: () => _playSong(song),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+      bottomSheet: MiniPlayer(
+        playerService: _playerService,
+        currentSong: _currentSong,
+        onTap: () {
+          if (_currentSong != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PlayerScreen(
+                  song: _currentSong!,
+                  playerService: _playerService,
+                ),
+              ),
+            );
+          }
+        },
+      ),
     );
+  }
+
+  void _playSong(Song song) async {
+    final index = _songs.indexOf(song);
+    _playerService.playlistManager.setPlaylist(_songs, startIndex: index);
+    await _playerService.playSong(song);
+    setState(() {
+      _currentSong = song;
+      _isPlaying = true;
+    });
   }
 }

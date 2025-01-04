@@ -21,8 +21,6 @@ class AudioScanner {
         '/storage/emulated/0/Music', // Dossier Musique standard
         '/storage/emulated/0/Download', // Dossier Téléchargements
         '/storage/emulated/0/Android/media', // Média des applications
-        '/storage/emulated/0/DCIM', // Dossier DCIM
-        '/storage/emulated/0/Documents', // Documents
         '/storage/emulated/0/VidMate', // VidMate
         '/storage/emulated/0/Xender', // Xender
       ];

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/services/audio_player_service.dart';
-import 'package:sound/screens/player_screen.dart';
 
 class MiniPlayer extends StatefulWidget {
   final AudioPlayerService playerService;

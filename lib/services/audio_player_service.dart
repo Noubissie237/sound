@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:just_audio/just_audio.dart';
 import 'package:sound/models/repeat_mode.dart';
 import 'package:sound/models/song.dart';
@@ -7,14 +9,31 @@ class AudioPlayerService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final PlaylistManager _playlistManager = PlaylistManager();
 
+  final _currentSongController = StreamController<Song?>.broadcast();
+  Song? _currentSong;
+
+  AudioPlayerService() {
+    // Écouter les changements d'état du player
+    _audioPlayer.playerStateStream.listen((state) {
+      // Mise à jour du current song si nécessaire
+      if (state.processingState == ProcessingState.completed) {
+        playNext();
+      }
+    });
+  }
+
+
   PlaylistManager get playlistManager => _playlistManager;
   Stream<PlayerState> get playerStateStream => _audioPlayer.playerStateStream;
   Stream<Duration> get positionStream => _audioPlayer.positionStream;
   Stream<Duration?> get durationStream => _audioPlayer.durationStream;
+  Stream<Song?> get currentSongStream => _currentSongController.stream;
+  Song? get currentSong => _currentSong;
 
   RepeatMode _repeatMode = RepeatMode.off;
-
   RepeatMode get repeatMode => _repeatMode;
+
+
 
   void toggleRepeatMode() {
     _repeatMode = _repeatMode.next();
@@ -31,7 +50,10 @@ class AudioPlayerService {
     }
   }
 
+
   Future<void> playSong(Song song) async {
+    _currentSong = song;
+    _currentSongController.add(song);
     await _audioPlayer.setFilePath(song.path);
     await _audioPlayer.play();
   }
@@ -72,7 +94,9 @@ class AudioPlayerService {
     await _audioPlayer.stop();
   }
 
+  //@override
   void dispose() {
     _audioPlayer.dispose();
+    _currentSongController.close();
   }
 }
