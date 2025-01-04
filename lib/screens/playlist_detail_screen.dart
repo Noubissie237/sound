@@ -19,6 +19,7 @@ class PlaylistDetailScreen extends StatefulWidget {
 }
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
+  // ignore: unused_field
   late AudioPlayerService _playerService;
   List<Song> _playlistSongs = [];
 
