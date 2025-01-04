@@ -9,7 +9,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final themeService = ThemeService(prefs);
-  
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => themeService,

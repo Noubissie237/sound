@@ -67,41 +67,120 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sound'),
+        scrolledUnderElevation: 0,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shuffle),
-            onPressed: () {
-              _playerService.playlistManager.shuffle();
-              setState(() {}); // Rafraîchir la liste
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.playlist_play),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PlaylistsScreen(
-                      storageService: PlaylistStorageService(prefs),
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              Provider.of<ThemeService>(context).isDarkMode
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).primaryColor.withOpacity(0.8),
+                Theme.of(context).primaryColor.withOpacity(0.2),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-            onPressed: () {
-              Provider.of<ThemeService>(context, listen: false).toggleTheme();
-            },
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset(
+                "assets/img/music.png",
+                width: 35,
+                height: 35,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Sound',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          // Bouton Shuffle avec animation
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.shuffle),
+              tooltip: 'Mélanger',
+              onPressed: () {
+                _playerService.playlistManager.shuffle();
+                setState(() {});
+              },
+            ),
+          ),
+          // Bouton Playlist
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.playlist_play),
+              tooltip: 'Playlists',
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlaylistsScreen(
+                        storageService: PlaylistStorageService(prefs),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          // Bouton Theme avec animation
+          Container(
+            margin: const EdgeInsets.only(right: 8, left: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return RotationTransition(
+                  turns: animation,
+                  child: child,
+                );
+              },
+              child: IconButton(
+                key: ValueKey<bool>(
+                  Provider.of<ThemeService>(context).isDarkMode,
+                ),
+                icon: Icon(
+                  Provider.of<ThemeService>(context).isDarkMode
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                ),
+                tooltip: Provider.of<ThemeService>(context).isDarkMode
+                    ? 'Mode clair'
+                    : 'Mode sombre',
+                onPressed: () {
+                  Provider.of<ThemeService>(context, listen: false)
+                      .toggleTheme();
+                },
+              ),
+            ),
           ),
         ],
       ),

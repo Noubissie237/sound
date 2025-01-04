@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const primaryLight = Color(0xFF1DB954); // Vert Spotify
+  static const primaryLight = Color(0xFF1DB954);
   static const primaryDark = Color(0xFF1ED760);
 
   static final ThemeData lightTheme = ThemeData(
