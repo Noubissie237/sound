@@ -26,6 +26,7 @@ class SoundApp extends StatelessWidget {
     return Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return MaterialApp(
+          debugShowCheckedModeBanner: false,
           title: 'Sound',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
