@@ -8,12 +8,17 @@ import 'package:just_audio_background/just_audio_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.yourdomain.sound.channel.audio',
     androidNotificationChannelName: 'Sound Audio Playback',
     androidNotificationOngoing: true,
     androidShowNotificationBadge: true,
+    preloadArtwork: true,
+    androidNotificationClickStartsActivity: true,
+    androidStopForegroundOnPause: true, // Ajoutez cette ligne
+    fastForwardInterval: const Duration(seconds: 10), // Optionnel
+    rewindInterval: const Duration(seconds: 10), // Optionnel
   );
 
   final prefs = await SharedPreferences.getInstance();

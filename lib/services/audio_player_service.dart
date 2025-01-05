@@ -8,6 +8,7 @@ import 'package:sound/services/playlist_manager.dart';
 class AudioPlayerService {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final PlaylistManager _playlistManager = PlaylistManager();
+  ConcatenatingAudioSource? _playlist;
 
   final _currentSongController = StreamController<Song?>.broadcast();
   Song? _currentSong;
@@ -21,11 +22,22 @@ class AudioPlayerService {
     });
 
     // S'assurer que le stream est mis à jour quand la chanson change
-    _audioPlayer.currentIndexStream.listen((_) {
-      if (_currentSong != null) {
-        _currentSongController.add(_currentSong);
+    _audioPlayer.currentIndexStream.listen((index) {
+      if (index != null && _playlist != null) {
+        final audioSource = _playlist!.children[index] as IndexedAudioSource;
+        final mediaItem = audioSource.tag as MediaItem;
+        final song = _playlistManager.playlist.firstWhere(
+          (s) => s.path == mediaItem.id,
+          orElse: () => _currentSong!,
+        );
+        _currentSong = song;
+        _currentSongController.add(song);
       }
     });
+
+    // Configurer les commandes de notification
+    _audioPlayer.androidAudioSessionId; // Active la session audio
+    _audioPlayer.setSkipSilenceEnabled(false);
   }
 
   PlaylistManager get playlistManager => _playlistManager;
@@ -55,29 +67,12 @@ class AudioPlayerService {
 
   Future<void> playSong(Song song) async {
     try {
-      // Créer les métadonnées pour la notification
-      final mediaItem = MediaItem(
-        id: song.path,
-        album: "Album local", // Ajoutez si disponible
-        title: song.title,
-        artist: song.artist,
-        duration: song.duration,
-        artUri: null, // Ajoutez l'URI de la pochette si disponible
-        displayTitle: song.title,
-        displaySubtitle: song.artist,
-      );
-
-      // Configurer la source audio avec les métadonnées
-      await _audioPlayer.setAudioSource(
-        AudioSource.file(
-          song.path,
-          tag: mediaItem,
-        ),
-      );
-
-      await _audioPlayer.play();
-      _currentSong = song;
-      _currentSongController.add(song);
+      // Créer une playlist avec toutes les chansons, en commençant par celle sélectionnée
+      List<Song> allSongs = [..._playlistManager.playlist];
+      if (!allSongs.contains(song)) {
+        allSongs = [song, ...allSongs];
+      }
+      await playPlaylist(allSongs, initialIndex: allSongs.indexOf(song));
     } catch (e) {
       print('Error playing song: $e');
     }
@@ -85,23 +80,29 @@ class AudioPlayerService {
 
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
     try {
-      final playlist = ConcatenatingAudioSource(
+      if (songs.isEmpty) return;
+
+      _playlistManager.setPlaylist(songs, startIndex: initialIndex);
+
+      _playlist = ConcatenatingAudioSource(
         children: songs.map((song) {
           return AudioSource.file(
             song.path,
             tag: MediaItem(
               id: song.path,
+              album: "Album local",
               title: song.title,
               artist: song.artist,
               duration: song.duration,
               artUri: null,
-              extras: {'file_path': song.path},
+              displayTitle: song.title,
+              displaySubtitle: song.artist,
             ),
           );
         }).toList(),
       );
 
-      await _audioPlayer.setAudioSource(playlist, initialIndex: initialIndex);
+      await _audioPlayer.setAudioSource(_playlist!, initialIndex: initialIndex);
       await _audioPlayer.play();
       _currentSong = songs[initialIndex];
       _currentSongController.add(_currentSong);
@@ -111,22 +112,36 @@ class AudioPlayerService {
   }
 
   Future<void> playNext() async {
-    if (_repeatMode == RepeatMode.all && !_playlistManager.hasNext) {
-      // Revenir au début de la playlist
-      final playlist = _playlistManager.playlist;
-      await playPlaylist(playlist, initialIndex: 0);
-    } else {
-      final nextSong = _playlistManager.nextSong();
-      if (nextSong != null) {
-        await playSong(nextSong);
+    try {
+      if (_audioPlayer.hasNext) {
+        await _audioPlayer.seekToNext();
+      } else if (_repeatMode == RepeatMode.all) {
+        await _audioPlayer.seek(Duration.zero, index: 0);
       }
+    } catch (e) {
+      print('Error playing next song: $e');
     }
   }
 
   Future<void> playPrevious() async {
-    final previousSong = _playlistManager.previousSong();
-    if (previousSong != null) {
-      await playSong(previousSong);
+    try {
+      // Si on est au-delà de 3 secondes dans la chanson actuelle,
+      // on revient au début de celle-ci
+      if (await _audioPlayer.position >= const Duration(seconds: 3)) {
+        await _audioPlayer.seek(Duration.zero);
+      }
+      // Sinon, on va à la chanson précédente
+      else if (_audioPlayer.hasPrevious) {
+        await _audioPlayer.seekToPrevious();
+      }
+      // Si on est au début de la première chanson et en mode repeat all,
+      // on va à la dernière chanson
+      else if (_repeatMode == RepeatMode.all && _playlist != null) {
+        await _audioPlayer.seek(Duration.zero,
+            index: _playlist!.children.length - 1);
+      }
+    } catch (e) {
+      print('Error playing previous song: $e');
     }
   }
 
@@ -149,6 +164,7 @@ class AudioPlayerService {
   }
 
   void dispose() {
+    _playlist = null;
     _audioPlayer.dispose();
     _currentSongController.close();
   }
