@@ -4,9 +4,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound/screens/home_screen.dart';
 import 'package:sound/services/theme_service.dart';
 import 'package:sound/theme/app_theme.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.yourdomain.sound.channel.audio',
+    androidNotificationChannelName: 'Sound Audio Playback',
+    androidNotificationOngoing: true,
+    androidShowNotificationBadge: true,
+  );
+
   final prefs = await SharedPreferences.getInstance();
   final themeService = ThemeService(prefs);
 
