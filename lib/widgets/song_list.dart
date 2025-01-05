@@ -158,12 +158,20 @@ class _SongListState extends State<SongList> {
       final songs = await _scanner.scanDevice();
       if (mounted) {
         setState(() {
+          _isLoading = false;
           _allSongs = songs;
           _filterSongs();
         });
       }
     } catch (e) {
-      _showErrorSnackBar('Erreur lors du chargement des chansons');
+      print('Erreur lors du scan : $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _allSongs = [];
+        });
+        //_showErrorSnackBar('Erreur lors du chargement des chansons');
+      }
     }
   }
 
@@ -405,13 +413,15 @@ class _SongListState extends State<SongList> {
         children: [
           buildHeader(title: headerTitle, subtitle: itemCount),
           Expanded(
-            child: _displayedSongs.isEmpty
+            child: _allSongs.isEmpty && !_isLoading
                 ? EmptyView(message: _getEmptyViewMessage())
-                : ListView.builder(
-                    itemCount: _displayedSongs.length,
-                    itemBuilder: (context, index) =>
-                        _buildSongTile(_displayedSongs[index], index),
-                  ),
+                : _displayedSongs.isEmpty
+                    ? EmptyView(message: _getEmptyViewMessage())
+                    : ListView.builder(
+                        itemCount: _displayedSongs.length,
+                        itemBuilder: (context, index) =>
+                            _buildSongTile(_displayedSongs[index], index),
+                      ),
           ),
         ],
       ),
@@ -420,7 +430,6 @@ class _SongListState extends State<SongList> {
         currentSong: _currentSong,
         onTap: () {
           if (_currentSong == null) return;
-
           _navigateToPlayerScreen();
         },
       ),
