@@ -9,6 +9,8 @@ import 'package:sound/services/audio_player_service.dart';
 import 'package:sound/services/theme_service.dart';
 import 'package:sound/services/user_preferences_service.dart';
 import 'package:sound/widgets/song_list.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -76,6 +78,18 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  Future<void> _launchWhatsApp() async {
+    const phoneNumber = '+237690232120';
+    const message =
+        'Salut, je souhaiterais partager quelques suggestions pour l\'amélioration de votre application.';
+    final Uri whatsappUrl = Uri.parse(
+        'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
+
+    if (!await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication)) {
+      throw Exception('Impossible d\'ouvrir WhatsApp');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -137,31 +151,12 @@ class _HomeScreenState extends State<HomeScreen>
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
+                child: IconButton(
+                  icon: const Icon(Icons.message, color: Color(0xFF25D366)),
+                  tooltip: 'Contacter sur WhatsApp',
+                  onPressed: _launchWhatsApp,
+                ),
               ),
-              // Container(
-              //   margin: const EdgeInsets.symmetric(horizontal: 4),
-              //   decoration: BoxDecoration(
-              //     color: Theme.of(context).primaryColor.withOpacity(0.1),
-              //     borderRadius: BorderRadius.circular(10),
-              //   ),
-              //   child: IconButton(
-              //     icon: const Icon(Icons.playlist_play),
-              //     tooltip: 'Playlists',
-              //     onPressed: () async {
-              //       final prefs = await SharedPreferences.getInstance();
-              //       if (mounted) {
-              //         Navigator.push(
-              //           context,
-              //           MaterialPageRoute(
-              //             builder: (context) => PlaylistsScreen(
-              //               storageService: PlaylistStorageService(prefs),
-              //             ),
-              //           ),
-              //         );
-              //       }
-              //     },
-              //   ),
-              // ),
               Container(
                 margin: const EdgeInsets.only(right: 8, left: 4),
                 decoration: BoxDecoration(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/services/audio_player_service.dart';
 import 'package:sound/widgets/audio_visualizer.dart';
 import 'package:sound/widgets/player_controls.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
-class PlayerScreen extends StatelessWidget {
+class PlayerScreen extends StatefulWidget {
   final Song initialSong;
   final AudioPlayerService playerService;
 
@@ -16,12 +18,104 @@ class PlayerScreen extends StatelessWidget {
   });
 
   @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  final GlobalKey shuffleKey = GlobalKey();
+  late TutorialCoachMark tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstSeen();
+  }
+
+  Future<void> _checkFirstSeen() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool seen = (prefs.getBool('tutorial_seen') ?? false);
+
+    if (!seen) {
+      _initTargets();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
+      });
+      await prefs.setBool('tutorial_seen', true);
+    }
+  }
+
+  void _initTargets() {
+    targets = [
+      TargetFocus(
+        identify: "shuffle",
+        keyTarget: shuffleKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return Container(
+                padding: const EdgeInsets.all(15),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Lecture aléatoire",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Cliquez ici pour commencer la lecture aléatoire de votre album",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ];
+  }
+
+  void showTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {
+        print("Tutoriel terminé");
+      },
+      onClickTarget: (target) {
+        print('Cible ${target.identify} cliquée');
+      },
+      onSkip: () {
+        print("Tutoriel ignoré");
+        return true;
+      },
+    );
+    tutorialCoachMark.show(context: context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<Song?>(
-      stream: playerService.currentSongStream,
-      initialData: initialSong,
+      stream: widget.playerService.currentSongStream,
+      initialData: widget.initialSong,
       builder: (context, snapshot) {
-        final currentSong = snapshot.data ?? initialSong;
+        final currentSong = snapshot.data ?? widget.initialSong;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -34,14 +128,17 @@ class PlayerScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
+                key: shuffleKey,
                 icon: const Icon(Icons.shuffle),
                 tooltip: 'Lecture aléatoire',
                 onPressed: () {
-                  final songs = [...playerService.playlistManager.playlist];
+                  final songs = [
+                    ...widget.playerService.playlistManager.playlist
+                  ];
                   songs.shuffle();
                   if (songs.isNotEmpty) {
-                    playerService.playPlaylist(songs);
-                    playerService.toggleShuffle();
+                    widget.playerService.playPlaylist(songs);
+                    widget.playerService.toggleShuffle();
                   }
                 },
               ),
@@ -59,7 +156,7 @@ class PlayerScreen extends StatelessWidget {
                         ),
                       ),
                       child: PlaylistView(
-                        playerService: playerService,
+                        playerService: widget.playerService,
                         currentSong: currentSong,
                       ),
                     ),
@@ -126,14 +223,14 @@ class PlayerScreen extends StatelessWidget {
                     },
                     child: AudioVisualizer(
                       key: ValueKey('visualizer-${currentSong.id}'),
-                      playerService: playerService,
+                      playerService: widget.playerService,
                     ),
                   ),
                   const SizedBox(height: 40),
                   StreamBuilder<bool>(
-                    stream: playerService.playerStateStream
-                        .map((_) => playerService.isShuffleEnabled),
-                    initialData: playerService.isShuffleEnabled,
+                    stream: widget.playerService.playerStateStream
+                        .map((_) => widget.playerService.isShuffleEnabled),
+                    initialData: widget.playerService.isShuffleEnabled,
                     builder: (context, shuffleSnapshot) {
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 400),
@@ -164,7 +261,7 @@ class PlayerScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   PlayerControls(
-                    playerService: playerService,
+                    playerService: widget.playerService,
                     song: currentSong,
                   ),
                   const Spacer(),
