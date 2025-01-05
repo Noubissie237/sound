@@ -5,27 +5,59 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:sound/models/song.dart';
 
 class AudioScanner {
+  // Singleton instance
+  static AudioScanner? _instance;
+  // Cache des songs
+  List<Song>? _cachedSongs;
+  // Flag pour suivre si un scan est en cours
+  bool _isScanning = false;
+
+  // Constructeur privé
+  AudioScanner._();
+
+  // Méthode factory pour obtenir l'instance
+  factory AudioScanner() {
+    _instance ??= AudioScanner._();
+    return _instance!;
+  }
+
   Future<List<Song>> scanDevice() async {
+    // Si nous avons déjà des songs en cache, les retourner
+    if (_cachedSongs != null) {
+      print("Returning cached songs: ${_cachedSongs!.length} songs");
+      return _cachedSongs!;
+    }
+
+    // Si un scan est déjà en cours, attendre qu'il se termine
+    if (_isScanning) {
+      print("Scan already in progress, waiting...");
+      while (_isScanning) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return _cachedSongs ?? [];
+    }
+
+    _isScanning = true;
     List<Song> songs = [];
 
     try {
+      print("Starting new scan...");
       bool hasPermission = await _checkAndRequestPermissions();
       if (!hasPermission) {
         print("Permissions non accordées");
+        _isScanning = false;
         return [];
       }
 
-      // Liste des chemins communs pour les fichiers audio sur Android
       List<String> commonPaths = [
-        '/storage/emulated/0', // Stockage interne principal
-        '/storage/emulated/0/Music', // Dossier Musique standard
-        '/storage/emulated/0/Download', // Dossier Téléchargements
-        '/storage/emulated/0/Android/media', // Média des applications
-        '/storage/emulated/0/VidMate', // VidMate
-        '/storage/emulated/0/Xender', // Xender
+        '/storage/emulated/0',
+        '/storage/emulated/0/Music',
+        '/storage/emulated/0/Download',
+        '/storage/emulated/0/Android/media',
+        '/storage/emulated/0/VidMate',
+        '/storage/emulated/0/Xender',
       ];
 
-      // Ajouter le stockage externe s'il existe
       try {
         Directory('/storage').listSync().forEach((entity) {
           if (entity.path != '/storage/emulated' &&
@@ -40,7 +72,6 @@ class AudioScanner {
 
       print("Dossiers à scanner: ${commonPaths.join(', ')}");
 
-      // Scanner chaque chemin
       for (String directoryPath in commonPaths) {
         Directory directory = Directory(directoryPath);
         if (await directory.exists()) {
@@ -53,10 +84,7 @@ class AudioScanner {
               String extension = path.extension(file.path).toLowerCase();
               if (['.mp3', '.m4a', '.wav', '.aac', '.ogg', '.flac']
                   .contains(extension)) {
-                print("Fichier audio trouvé: ${file.path}");
                 String fileId = path.basename(file.path).hashCode.toString();
-
-                // Vérifier si la chanson n'est pas déjà dans la liste
                 if (!songs.any((song) => song.path == file.path)) {
                   songs.add(Song(
                     id: fileId,
@@ -74,11 +102,27 @@ class AudioScanner {
       }
 
       print("Nombre total de chansons trouvées: ${songs.length}");
+      _cachedSongs = songs;
     } catch (e) {
       print("Erreur lors du scan: $e");
+    } finally {
+      _isScanning = false;
     }
 
-    return songs;
+    return _cachedSongs ?? [];
+  }
+
+  // Méthode pour forcer un nouveau scan
+  Future<List<Song>> rescan() async {
+    print("Forcing rescan...");
+    _cachedSongs = null;
+    return scanDevice();
+  }
+
+  // Méthode pour vider le cache
+  void clearCache() {
+    print("Clearing song cache");
+    _cachedSongs = null;
   }
 
   Future<bool> _checkAndRequestPermissions() async {
@@ -103,7 +147,6 @@ class AudioScanner {
     List<FileSystemEntity> files = [];
     try {
       await for (var entity in dir.list(recursive: true, followLinks: false)) {
-        // Ignorer les dossiers cachés
         if (!path.basename(entity.path).startsWith('.')) {
           files.add(entity);
         }
