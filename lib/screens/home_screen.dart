@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sound/screens/playlist_screen.dart';
 import 'package:sound/services/audio_player_service.dart';
-import 'package:sound/services/playlist_storage_service.dart';
 import 'package:sound/services/theme_service.dart';
 import 'package:sound/services/user_preferences_service.dart';
 import 'package:sound/widgets/song_list.dart';
@@ -140,30 +138,30 @@ class _HomeScreenState extends State<HomeScreen>
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.playlist_play),
-                  tooltip: 'Playlists',
-                  onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    if (mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PlaylistsScreen(
-                            storageService: PlaylistStorageService(prefs),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
+              // Container(
+              //   margin: const EdgeInsets.symmetric(horizontal: 4),
+              //   decoration: BoxDecoration(
+              //     color: Theme.of(context).primaryColor.withOpacity(0.1),
+              //     borderRadius: BorderRadius.circular(10),
+              //   ),
+              //   child: IconButton(
+              //     icon: const Icon(Icons.playlist_play),
+              //     tooltip: 'Playlists',
+              //     onPressed: () async {
+              //       final prefs = await SharedPreferences.getInstance();
+              //       if (mounted) {
+              //         Navigator.push(
+              //           context,
+              //           MaterialPageRoute(
+              //             builder: (context) => PlaylistsScreen(
+              //               storageService: PlaylistStorageService(prefs),
+              //             ),
+              //           ),
+              //         );
+              //       }
+              //     },
+              //   ),
+              // ),
               Container(
                 margin: const EdgeInsets.only(right: 8, left: 4),
                 decoration: BoxDecoration(
