@@ -109,7 +109,7 @@ class AudioPlayerService {
       _playlist = ConcatenatingAudioSource(
         children: await Future.wait(songs.map((song) async {
           final localImagePath =
-              await getLocalImagePath("assets/img/music.png");
+              await getLocalImagePath("assets/img/bg1.jpg");
           return AudioSource.file(
             song.path,
             tag: MediaItem(
