@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound/screens/home_screen.dart';
 import 'package:sound/services/theme_service.dart';
+import 'package:sound/services/user_preferences_service.dart';
 import 'package:sound/theme/app_theme.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -16,17 +17,21 @@ void main() async {
     androidShowNotificationBadge: true,
     preloadArtwork: true,
     androidNotificationClickStartsActivity: true,
-    androidStopForegroundOnPause: true, // Ajoutez cette ligne
-    fastForwardInterval: const Duration(seconds: 10), // Optionnel
-    rewindInterval: const Duration(seconds: 10), // Optionnel
+    androidStopForegroundOnPause: true,
+    fastForwardInterval: const Duration(seconds: 10),
+    rewindInterval: const Duration(seconds: 10),
   );
 
   final prefs = await SharedPreferences.getInstance();
   final themeService = ThemeService(prefs);
+  final userPreferencesService = UserPreferencesService(prefs);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => themeService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => themeService),
+        Provider(create: (_) => userPreferencesService),
+      ],
       child: const SoundApp(),
     ),
   );

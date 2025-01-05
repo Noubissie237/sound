@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/screens/player_screen.dart';
 import 'package:sound/services/audio_scanner.dart';
 import 'package:sound/services/audio_player_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:sound/services/user_preferences_service.dart';
+import 'package:sound/theme/app_theme.dart';
 import 'package:sound/widgets/delete_confirmation_dialog.dart';
 import 'package:sound/widgets/empty_view.dart';
 import 'package:sound/widgets/file_info_dialog.dart';
@@ -13,8 +16,15 @@ import 'package:sound/widgets/mini_player.dart';
 import 'package:sound/widgets/rename_dialog.dart';
 import 'package:sound/widgets/song_option_sheet.dart';
 
+enum SongListFilter { all, favorites, history, stats }
+
 class SongList extends StatefulWidget {
-  const SongList({super.key});
+  final SongListFilter filter;
+
+  const SongList({
+    super.key,
+    required this.filter,
+  });
 
   @override
   State<SongList> createState() => _SongListState();
@@ -23,9 +33,12 @@ class SongList extends StatefulWidget {
 class _SongListState extends State<SongList> {
   final AudioScanner _scanner = AudioScanner();
   final AudioPlayerService _playerService = AudioPlayerService();
-  List<Song> _songs = [];
+  List<Song> _allSongs = []; // Store all songs
+  List<Song> _displayedSongs = []; // Songs currently displayed
   Song? _currentSong;
   bool _isLoading = true;
+  late UserPreferencesService _preferencesService;
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
@@ -33,11 +46,53 @@ class _SongListState extends State<SongList> {
     _initializePlayer();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _preferencesService =
+        Provider.of<UserPreferencesService>(context, listen: false);
+  }
+
+  @override
+  void didUpdateWidget(SongList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filter != widget.filter) {
+      _filterSongs();
+    }
+  }
+
+  void _filterSongs() {
+    switch (widget.filter) {
+      case SongListFilter.all:
+        _displayedSongs = _allSongs;
+        break;
+      case SongListFilter.favorites:
+        _displayedSongs = _allSongs
+            .where((song) => _preferencesService.isFavorite(song))
+            .toList();
+        break;
+      case SongListFilter.history:
+        // Implement history filtering here
+        _displayedSongs = _allSongs;
+        break;
+      case SongListFilter.stats:
+        // Implement stats filtering here
+        _displayedSongs = _allSongs;
+        break;
+    }
+    // Mettre à jour la playlist avec les chansons filtrées
+    _playerService.playlistManager.setPlaylist(_displayedSongs);
+    setState(() {});
+  }
+
   Future<void> _initializePlayer() async {
     await _loadSongs();
     _setupAudioPlayerListeners();
     if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _filterSongs(); // Initial filtering
+      });
     }
   }
 
@@ -57,10 +112,8 @@ class _SongListState extends State<SongList> {
       final songs = await _scanner.scanDevice();
       if (mounted) {
         setState(() {
-          _songs = songs;
-          if (songs.isNotEmpty) {
-            _playerService.playlistManager.setPlaylist(songs);
-          }
+          _allSongs = songs;
+          _filterSongs();
         });
       }
     } catch (e) {
@@ -94,8 +147,10 @@ class _SongListState extends State<SongList> {
 
   Future<void> _playSong(Song song) async {
     try {
-      final index = _songs.indexOf(song);
-      _playerService.playlistManager.setPlaylist(_songs, startIndex: index);
+      final index = _displayedSongs.indexOf(song);
+      // Utiliser les chansons filtrées pour la playlist
+      _playerService.playlistManager
+          .setPlaylist(_displayedSongs, startIndex: index);
       await _playerService.playSong(song);
       setState(() => _currentSong = song);
     } catch (e) {
@@ -106,6 +161,8 @@ class _SongListState extends State<SongList> {
   Widget _buildSongTile(Song song, int index) {
     final isCurrentSong = _currentSong?.id == song.id;
     final theme = Theme.of(context);
+    final isFavorite = _preferencesService.isFavorite(song);
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return ListTile(
       leading: _buildSongNumber(index, isCurrentSong),
@@ -121,12 +178,45 @@ class _SongListState extends State<SongList> {
         song.artist,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.more_vert),
-        onPressed: () => _showSongOptions(song, index),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite
+                  ? isDarkMode
+                      ? AppTheme.primaryDark
+                      : AppTheme.primaryLight
+                  : null,
+            ),
+            onPressed: () => _toggleFavorite(song),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => _showSongOptions(song, index),
+          ),
+        ],
       ),
       onTap: () => _playSong(song),
     );
+  }
+
+  Future<void> _toggleFavorite(Song song) async {
+    await _preferencesService.toggleFavorite(song);
+    // Mettre à jour l'historique d'écoute
+    await _preferencesService.addToHistory(song);
+    setState(() {}); // Rafraîchir l'UI
+    _showSuccessSnackBar(
+      _preferencesService.isFavorite(song)
+          ? 'Ajouté aux favoris'
+          : 'Retiré des favoris',
+    );
+  }
+
+  void _handleAddToFavorites(Song song) {
+    _toggleFavorite(song);
+    _showSuccessSnackBar('Ajouté aux favoris');
   }
 
   Widget _buildSongNumber(int index, bool isCurrentSong) {
@@ -178,7 +268,9 @@ class _SongListState extends State<SongList> {
   }
 
   Future<void> _handlePlayNow(Song song, int index) async {
-    _playerService.playlistManager.setPlaylist(_songs, startIndex: index);
+    // Utiliser les chansons filtrées pour la playlist
+    _playerService.playlistManager
+        .setPlaylist(_displayedSongs, startIndex: index);
     await _playerService.playSong(song);
     if (!mounted) return;
 
@@ -210,10 +302,10 @@ class _SongListState extends State<SongList> {
     }
   }
 
-  void _handleAddToFavorites(Song song) {
-    // Implémenter la logique des favoris
-    _showSuccessSnackBar('Ajouté aux favoris');
-  }
+  // void _handleAddToFavorites(Song song) {
+  //   // Implémenter la logique des favoris
+  //   _showSuccessSnackBar('Ajouté aux favoris');
+  // }
 
   Future<void> _handleDelete(Song song) async {
     final shouldDelete = await showDialog<bool>(
@@ -224,7 +316,7 @@ class _SongListState extends State<SongList> {
     if (shouldDelete ?? false) {
       try {
         await File(song.path).delete();
-        setState(() => _songs.remove(song));
+        setState(() => _allSongs.remove(song));
         _showSuccessSnackBar('Chanson supprimée');
       } catch (e) {
         _showErrorSnackBar('Erreur lors de la suppression');
@@ -251,17 +343,42 @@ class _SongListState extends State<SongList> {
       return const LoadingView();
     }
 
+    final String headerTitle;
+    final String itemCount;
+
+    switch (widget.filter) {
+      case SongListFilter.favorites:
+        headerTitle = 'Mes Favoris';
+        itemCount =
+            '${_displayedSongs.length} favori${_displayedSongs.length > 1 ? 's' : ''}';
+        break;
+      case SongListFilter.history:
+        headerTitle = 'Historique';
+        itemCount =
+            '${_displayedSongs.length} morceau${_displayedSongs.length > 1 ? 'x' : ''}';
+        break;
+      case SongListFilter.stats:
+        headerTitle = 'Statistiques';
+        itemCount =
+            '${_displayedSongs.length} morceau${_displayedSongs.length > 1 ? 'x' : ''}';
+        break;
+      case SongListFilter.all:
+        headerTitle = 'Ma Bibliothèque';
+        itemCount =
+            '${_displayedSongs.length} morceau${_displayedSongs.length > 1 ? 'x' : ''} trouvé${_displayedSongs.length > 1 ? 's' : ''}';
+    }
+
     return Scaffold(
       body: Column(
         children: [
-          buildHeader(),
+          buildHeader(title: headerTitle, subtitle: itemCount),
           Expanded(
-            child: _songs.isEmpty
-                ? const EmptyView()
+            child: _displayedSongs.isEmpty
+                ? EmptyView(message: _getEmptyViewMessage())
                 : ListView.builder(
-                    itemCount: _songs.length,
+                    itemCount: _displayedSongs.length,
                     itemBuilder: (context, index) =>
-                        _buildSongTile(_songs[index], index),
+                        _buildSongTile(_displayedSongs[index], index),
                   ),
           ),
         ],
@@ -269,12 +386,29 @@ class _SongListState extends State<SongList> {
       bottomSheet: MiniPlayer(
         playerService: _playerService,
         currentSong: _currentSong,
-        onTap: _navigateToPlayerScreen,
+        onTap: () {
+          if (_currentSong == null) return;
+
+          _navigateToPlayerScreen();
+        },
       ),
     );
   }
 
-  Widget buildHeader() {
+  String _getEmptyViewMessage() {
+    switch (widget.filter) {
+      case SongListFilter.favorites:
+        return 'Aucun favori pour le moment\nAppuyez sur le cœur pour en ajouter';
+      case SongListFilter.history:
+        return 'Aucun historique disponible\nÉcoutez de la musique pour commencer';
+      case SongListFilter.stats:
+        return 'Aucune statistique disponible\nÉcoutez de la musique pour commencer';
+      case SongListFilter.all:
+        return 'Aucune musique trouvée\nAjoutez des fichiers audio à votre appareil';
+    }
+  }
+
+  Widget buildHeader({required String title, required String subtitle}) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -299,7 +433,7 @@ class _SongListState extends State<SongList> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.music_note,
+                _getHeaderIcon(),
                 color: Theme.of(context).primaryColor,
               ),
             ),
@@ -308,14 +442,14 @@ class _SongListState extends State<SongList> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ma Bibliothèque',
+                  title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${_songs.length} morceau${_songs.length > 1 ? 'x' : ''} trouvé${_songs.length > 1 ? 's' : ''}',
+                  subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
@@ -326,6 +460,19 @@ class _SongListState extends State<SongList> {
         ),
       ),
     );
+  }
+
+  IconData _getHeaderIcon() {
+    switch (_currentTabIndex) {
+      case 1:
+        return Icons.favorite;
+      case 2:
+        return Icons.history;
+      case 3:
+        return Icons.bar_chart;
+      default:
+        return Icons.music_note;
+    }
   }
 
   void _navigateToPlayerScreen() {

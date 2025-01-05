@@ -9,6 +9,7 @@ import 'package:sound/screens/playlist_screen.dart';
 import 'package:sound/services/audio_player_service.dart';
 import 'package:sound/services/playlist_storage_service.dart';
 import 'package:sound/services/theme_service.dart';
+import 'package:sound/services/user_preferences_service.dart';
 import 'package:sound/widgets/song_list.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,17 +19,33 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   bool _hasPermission = false;
   late final AudioPlayerService _playerService;
+  late final TabController _tabController;
+  late final UserPreferencesService preferencesService;
 
   @override
   void initState() {
     super.initState();
-    _playerService = AudioPlayerService(); // Initialisez le service
+    _playerService = AudioPlayerService();
+    _tabController = TabController(length: 4, vsync: this);
+    _initializeServices();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPermissions();
     });
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    preferencesService = UserPreferencesService(prefs);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future _checkPermissions() async {
@@ -65,47 +82,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor.withOpacity(0.8),
-                Theme.of(context).primaryColor.withOpacity(0.2),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          scrolledUnderElevation: 0,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withOpacity(0.2),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Image.asset(
+                  "assets/img/music.png",
+                  width: 35,
+                  height: 35,
+                ),
               ),
-              child: Image.asset(
-                "assets/img/music.png",
-                width: 35,
-                height: 35,
+              const SizedBox(width: 12),
+              Text(
+                'Sound',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Sound',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.music_note), text: 'Musique'),
+              Tab(icon: Icon(Icons.favorite), text: 'Favoris'),
+              Tab(icon: Icon(Icons.history), text: 'Historique'),
+              Tab(icon: Icon(Icons.bar_chart), text: 'Stats'),
+            ],
+          ),
         actions: [
           // Bouton Shuffle avec animation
           Container(
@@ -183,21 +211,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-      ),
-      body: _hasPermission
-          ? const SongList()
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        body: _hasPermission
+            ? TabBarView(
+                controller: _tabController,
                 children: [
-                  const Text('Permission d\'accès aux fichiers requise'),
-                  ElevatedButton(
-                    onPressed: _checkPermissions,
-                    child: const Text('Autoriser l\'accès'),
-                  ),
+                  const SongList(filter: SongListFilter.all),
+                  const SongList(filter: SongListFilter.favorites),
+                  const SongList(filter: SongListFilter.history),
+                  const SongList(filter: SongListFilter.stats),
                 ],
+              )
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Permission d\'accès aux fichiers requise'),
+                    ElevatedButton(
+                      onPressed: _checkPermissions,
+                      child: const Text('Autoriser l\'accès'),
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }
+
+
+
