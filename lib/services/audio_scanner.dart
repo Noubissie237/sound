@@ -1,20 +1,39 @@
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:sound/models/song.dart';
+import 'dart:convert';
 
 class AudioScanner {
-  
-  static AudioScanner? _instance; 
+  static AudioScanner? _instance;
   List<Song>? _cachedSongs;
   bool _isScanning = false;
+
+  final Set<String> _processedFiles = {};
 
   AudioScanner._();
 
   factory AudioScanner() {
     _instance ??= AudioScanner._();
     return _instance!;
+  }
+
+  Future<String> _generateUniqueId(File file) async {
+    final filePath = file.path;
+    final fileSize = await file.length();
+    final data = utf8.encode('$filePath$fileSize');
+    return sha256.convert(data).toString();
+  }
+
+  Future<bool> _isDuplicate(File file) async {
+    final uniqueId = await _generateUniqueId(file);
+    if (_processedFiles.contains(uniqueId)) {
+      return true;
+    }
+    _processedFiles.add(uniqueId);
+    return false;
   }
 
   Future<List<Song>> scanDevice() async {
@@ -33,6 +52,7 @@ class AudioScanner {
 
     _isScanning = true;
     List<Song> songs = [];
+    _processedFiles.clear();
 
     try {
       print("Starting new scan...");
@@ -78,8 +98,8 @@ class AudioScanner {
               String extension = path.extension(file.path).toLowerCase();
               if (['.mp3', '.m4a', '.wav', '.aac', '.ogg', '.flac']
                   .contains(extension)) {
-                String fileId = path.basename(file.path).hashCode.toString();
-                if (!songs.any((song) => song.path == file.path)) {
+                if (!await _isDuplicate(file)) {
+                  String fileId = await _generateUniqueId(file);
                   songs.add(Song(
                     id: fileId,
                     title: path.basenameWithoutExtension(file.path),
@@ -88,6 +108,8 @@ class AudioScanner {
                     path: file.path,
                     duration: const Duration(seconds: 0),
                   ));
+                } else {
+                  print("Doublon détecté: ${file.path}");
                 }
               }
             }
@@ -95,7 +117,8 @@ class AudioScanner {
         }
       }
 
-      print("Nombre total de chansons trouvées: ${songs.length}");
+      print(
+          "Nombre total de chansons trouvées (sans doublons): ${songs.length}");
       _cachedSongs = songs;
     } catch (e) {
       print("Erreur lors du scan: $e");
@@ -109,12 +132,14 @@ class AudioScanner {
   Future<List<Song>> rescan() async {
     print("Forcing rescan...");
     _cachedSongs = null;
+    _processedFiles.clear();
     return scanDevice();
   }
 
   void clearCache() {
     print("Clearing song cache");
     _cachedSongs = null;
+    _processedFiles.clear();
   }
 
   Future<bool> _checkAndRequestPermissions() async {

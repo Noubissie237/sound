@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     playerService = AudioPlayerService();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _initializeServices();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPermissions();
@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 2,
       child: Scaffold(
           appBar: AppBar(
             scrolledUnderElevation: 0,
