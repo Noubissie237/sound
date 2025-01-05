@@ -186,7 +186,7 @@ class _SongListState extends State<SongList> {
       context,
       MaterialPageRoute(
         builder: (context) => PlayerScreen(
-          song: song,
+          initialSong: song,
           playerService: _playerService,
         ),
       ),
@@ -254,7 +254,7 @@ class _SongListState extends State<SongList> {
     return Scaffold(
       body: Column(
         children: [
-          _buildHeader(),
+          buildHeader(),
           Expanded(
             child: _songs.isEmpty
                 ? const EmptyView()
@@ -274,7 +274,7 @@ class _SongListState extends State<SongList> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget buildHeader() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -335,7 +335,7 @@ class _SongListState extends State<SongList> {
       context,
       MaterialPageRoute(
         builder: (context) => PlayerScreen(
-          song: _currentSong!,
+          initialSong: _currentSong!,
           playerService: _playerService,
         ),
       ),

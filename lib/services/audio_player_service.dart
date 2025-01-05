@@ -15,13 +15,18 @@ class AudioPlayerService {
   AudioPlayerService() {
     // Écouter les changements d'état du player
     _audioPlayer.playerStateStream.listen((state) {
-      // Mise à jour du current song si nécessaire
       if (state.processingState == ProcessingState.completed) {
         playNext();
       }
     });
-  }
 
+    // S'assurer que le stream est mis à jour quand la chanson change
+    _audioPlayer.currentIndexStream.listen((_) {
+      if (_currentSong != null) {
+        _currentSongController.add(_currentSong);
+      }
+    });
+  }
 
   PlaylistManager get playlistManager => _playlistManager;
   Stream<PlayerState> get playerStateStream => _audioPlayer.playerStateStream;
@@ -32,8 +37,6 @@ class AudioPlayerService {
 
   RepeatMode _repeatMode = RepeatMode.off;
   RepeatMode get repeatMode => _repeatMode;
-
-
 
   void toggleRepeatMode() {
     _repeatMode = _repeatMode.next();
@@ -50,19 +53,26 @@ class AudioPlayerService {
     }
   }
 
-
   Future<void> playSong(Song song) async {
-    _currentSong = song;
-    _currentSongController.add(song);
-    await _audioPlayer.setFilePath(song.path);
-    await _audioPlayer.play();
+    try {
+      await _audioPlayer.setFilePath(song.path);
+      await _audioPlayer.play();
+      _currentSong = song;
+      _currentSongController.add(song);
+    } catch (e) {
+      print('Error playing song: $e');
+      // Gérer l'erreur si nécessaire
+    }
   }
 
   Future<void> playNext() async {
     if (_repeatMode == RepeatMode.all && !_playlistManager.hasNext) {
       // Revenir au début de la playlist
       _playlistManager.setPlaylist(_playlistManager.playlist, startIndex: 0);
-      await playSong(_playlistManager.currentSong!);
+      final firstSong = _playlistManager.currentSong;
+      if (firstSong != null) {
+        await playSong(firstSong);
+      }
     } else {
       final nextSong = _playlistManager.nextSong();
       if (nextSong != null) {
@@ -92,9 +102,10 @@ class AudioPlayerService {
 
   Future<void> stop() async {
     await _audioPlayer.stop();
+    _currentSong = null;
+    _currentSongController.add(null);
   }
 
-  //@override
   void dispose() {
     _audioPlayer.dispose();
     _currentSongController.close();
