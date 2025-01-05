@@ -31,19 +31,69 @@ class SongList extends StatefulWidget {
 }
 
 class _SongListState extends State<SongList> {
+  final TextEditingController _searchController = TextEditingController();
   final AudioScanner _scanner = AudioScanner();
   final AudioPlayerService _playerService = AudioPlayerService();
-  List<Song> _allSongs = []; // Store all songs
-  List<Song> _displayedSongs = []; // Songs currently displayed
+  List<Song> _allSongs = [];
+  List<Song> _displayedSongs = [];
   Song? _currentSong;
   bool _isLoading = true;
+  bool _isSearching = false;
   late UserPreferencesService _preferencesService;
   int _currentTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_handleSearch);
     _initializePlayer();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _playerService.dispose();
+    super.dispose();
+  }
+
+  void _handleSearch() {
+    final searchTerm = _searchController.text.toLowerCase();
+    if (searchTerm.isEmpty) {
+      _filterSongs(); // Revenir au filtrage normal si la recherche est vide
+      return;
+    }
+
+    // Filtrer d'abord selon le filtre actif
+    List<Song> filteredSongs;
+    switch (widget.filter) {
+      case SongListFilter.favorites:
+        filteredSongs = _allSongs
+            .where((song) => _preferencesService.isFavorite(song))
+            .toList();
+        break;
+      case SongListFilter.history:
+        // Implémenter la logique de l'historique ici
+        filteredSongs = _allSongs;
+        break;
+      case SongListFilter.stats:
+        // Implémenter la logique des stats ici
+        filteredSongs = _allSongs;
+        break;
+      case SongListFilter.all:
+        filteredSongs = _allSongs;
+        break;
+    }
+
+    // Appliquer ensuite le filtre de recherche
+    setState(() {
+      _displayedSongs = filteredSongs.where((song) {
+        return song.title.toLowerCase().contains(searchTerm) ||
+            song.artist.toLowerCase().contains(searchTerm);
+      }).toList();
+    });
+
+    // Mettre à jour la playlist avec les résultats de la recherche
+    _playerService.playlistManager.setPlaylist(_displayedSongs);
   }
 
   @override
@@ -302,11 +352,6 @@ class _SongListState extends State<SongList> {
     }
   }
 
-  // void _handleAddToFavorites(Song song) {
-  //   // Implémenter la logique des favoris
-  //   _showSuccessSnackBar('Ajouté aux favoris');
-  // }
-
   Future<void> _handleDelete(Song song) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -329,12 +374,6 @@ class _SongListState extends State<SongList> {
       context: context,
       builder: (context) => FileInfoDialog(song: song),
     );
-  }
-
-  @override
-  void dispose() {
-    _playerService.dispose();
-    super.dispose();
   }
 
   @override
@@ -408,57 +447,109 @@ class _SongListState extends State<SongList> {
     }
   }
 
+  // Modifier le widget buildHeader pour inclure la barre de recherche
   Widget buildHeader({required String title, required String subtitle}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor.withOpacity(0.05),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.05),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _getHeaderIcon(),
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                      ),
-                ),
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).primaryColor.withOpacity(0.05),
+                Theme.of(context).colorScheme.secondary.withOpacity(0.05),
               ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
             ),
-          ],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _getHeaderIcon(),
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(_isSearching ? Icons.close : Icons.search),
+                      onPressed: () {
+                        setState(() {
+                          _isSearching = !_isSearching;
+                          if (!_isSearching) {
+                            _searchController.clear();
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              if (_isSearching)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher par titre ou artiste...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).cardColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _handleSearch(),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
