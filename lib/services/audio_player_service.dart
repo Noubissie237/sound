@@ -108,8 +108,7 @@ class AudioPlayerService {
 
       _playlist = ConcatenatingAudioSource(
         children: await Future.wait(songs.map((song) async {
-          final localImagePath =
-              await getLocalImagePath("assets/img/bg1.jpg");
+          final localImagePath = await getLocalImagePath("assets/img/bg1.png");
           return AudioSource.file(
             song.path,
             tag: MediaItem(
@@ -118,8 +117,8 @@ class AudioPlayerService {
               title: song.title,
               artist: song.artist,
               duration: song.duration,
-              artUri: Uri.file(localImagePath), // Utiliser l'URI locale
-              displayTitle: song.title,
+              artUri: Uri.file(localImagePath),
+              displayTitle: "🎵 ${song.title}",
               displaySubtitle: song.artist,
             ),
           );
