@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sound/models/repeat_mode.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/services/playlist_manager.dart';
@@ -78,6 +81,25 @@ class AudioPlayerService {
     }
   }
 
+  Future<String> getLocalImagePath(String assetPath) async {
+    // Charger l'image depuis les assets
+    final byteData = await rootBundle.load(assetPath);
+
+    // Obtenir le répertoire temporaire
+    final tempDir = await getTemporaryDirectory();
+
+    // Définir un chemin pour l'image temporaire
+    final filePath = '${tempDir.path}/${assetPath.split('/').last}';
+
+    // Écrire l'image dans un fichier temporaire
+    final file = File(filePath);
+    if (!(await file.exists())) {
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+    }
+
+    return filePath;
+  }
+
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
     try {
       if (songs.isEmpty) return;
@@ -85,7 +107,9 @@ class AudioPlayerService {
       _playlistManager.setPlaylist(songs, startIndex: initialIndex);
 
       _playlist = ConcatenatingAudioSource(
-        children: songs.map((song) {
+        children: await Future.wait(songs.map((song) async {
+          final localImagePath =
+              await getLocalImagePath("assets/img/music.png");
           return AudioSource.file(
             song.path,
             tag: MediaItem(
@@ -94,12 +118,12 @@ class AudioPlayerService {
               title: song.title,
               artist: song.artist,
               duration: song.duration,
-              artUri: null,
+              artUri: Uri.file(localImagePath), // Utiliser l'URI locale
               displayTitle: song.title,
               displaySubtitle: song.artist,
             ),
           );
-        }).toList(),
+        }).toList()),
       );
 
       await _audioPlayer.setAudioSource(_playlist!, initialIndex: initialIndex);
