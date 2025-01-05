@@ -119,11 +119,11 @@ class _SongListState extends State<SongList> {
             .toList();
         break;
       case SongListFilter.history:
-        // Implement history filtering here
+        // J'implementerai la logique pour l'historique plus tard
         _displayedSongs = _allSongs;
         break;
       case SongListFilter.stats:
-        // Implement stats filtering here
+        // J'implementerai la logique pour les stats plus tard
         _displayedSongs = _allSongs;
         break;
     }
@@ -137,7 +137,7 @@ class _SongListState extends State<SongList> {
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _filterSongs(); 
+        _filterSongs();
       });
     }
   }

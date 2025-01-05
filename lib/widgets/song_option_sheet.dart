@@ -20,26 +20,6 @@ class SongOptionsSheet extends StatelessWidget {
             onTap: () => Navigator.pop(context, 'play'),
           ),
           OptionTile(
-            icon: Icons.queue,
-            title: 'Lire ensuite',
-            onTap: () => Navigator.pop(context, 'next'),
-          ),
-          OptionTile(
-            icon: Icons.edit,
-            title: 'Renommer',
-            onTap: () => Navigator.pop(context, 'rename'),
-          ),
-          OptionTile(
-            icon: Icons.favorite_border,
-            title: 'Ajouter aux favoris',
-            onTap: () => Navigator.pop(context, 'favorite'),
-          ),
-          OptionTile(
-            icon: Icons.delete,
-            title: 'Supprimer',
-            onTap: () => Navigator.pop(context, 'delete'),
-          ),
-          OptionTile(
             icon: Icons.info,
             title: 'Informations',
             onTap: () => Navigator.pop(context, 'info'),
@@ -48,6 +28,11 @@ class SongOptionsSheet extends StatelessWidget {
             icon: Icons.share,
             title: 'Partager',
             onTap: () => Navigator.pop(context, 'share'),
+          ),
+          OptionTile(
+            icon: Icons.delete,
+            title: 'Supprimer',
+            onTap: () => Navigator.pop(context, 'delete'),
           ),
         ],
       ),

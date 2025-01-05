@@ -128,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen>
               tabs: const [
                 Tab(icon: Icon(Icons.music_note), text: 'Musique'),
                 Tab(icon: Icon(Icons.favorite), text: 'Favoris'),
-                Tab(icon: Icon(Icons.history), text: 'Historique'),
-                Tab(icon: Icon(Icons.bar_chart), text: 'Stats'),
+                // Tab(icon: Icon(Icons.history), text: 'Historique'),
+                // Tab(icon: Icon(Icons.bar_chart), text: 'Stats'),
               ],
             ),
             actions: [
@@ -206,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     const SongList(filter: SongListFilter.all),
                     const SongList(filter: SongListFilter.favorites),
-                    const SongList(filter: SongListFilter.history),
-                    const SongList(filter: SongListFilter.stats),
+                    // const SongList(filter: SongListFilter.history),
+                    // const SongList(filter: SongListFilter.stats),
                   ],
                 )
               : Center(

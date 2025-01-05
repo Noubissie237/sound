@@ -69,10 +69,10 @@ class _FavoritesListState extends State<FavoritesList> {
             },
           ),
           onTap: () async {
-            // Jouer la chanson
             final playerService = AudioPlayerService();
-            playerService.playlistManager.setPlaylist(_favorites, startIndex: index);
-            await playerService.playSong(song); // Utilisation de playSong au lieu de play
+            playerService.playlistManager
+                .setPlaylist(_favorites, startIndex: index);
+            await playerService.playSong(song);
           },
         );
       },
