@@ -21,9 +21,8 @@ class AudioPlayerService {
     });
 
     // S'assurer que le stream est mis à jour quand la chanson change
-    _audioPlayer.currentIndexStream.listen((index) {
-      if (index != null && _playlistManager.playlist.isNotEmpty) {
-        _currentSong = _playlistManager.playlist[index];
+    _audioPlayer.currentIndexStream.listen((_) {
+      if (_currentSong != null) {
         _currentSongController.add(_currentSong);
       }
     });
@@ -54,62 +53,21 @@ class AudioPlayerService {
     }
   }
 
-  Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
-    try {
-      final playlist = ConcatenatingAudioSource(
-        children: songs.map((song) {
-          return AudioSource.file(
-            song.path,
-            tag: MediaItem(
-              id: song.path,
-              album: "Album local",
-              title: song.title,
-              artist: song.artist,
-              duration: song.duration,
-              artUri: null,
-              displayTitle: song.title,
-              displaySubtitle: song.artist,
-              playable: true,
-              displayDescription: "En cours de lecture",
-            ),
-          );
-        }).toList(),
-      );
-
-      // Mettre à jour la playlist dans le gestionnaire
-      _playlistManager.setPlaylist(songs, startIndex: initialIndex);
-
-      await _audioPlayer.setAudioSource(playlist, initialIndex: initialIndex);
-      await _audioPlayer.play();
-      _currentSong = songs[initialIndex];
-      _currentSongController.add(_currentSong);
-
-      // Configurer la vitesse de lecture
-      await _audioPlayer.setSpeed(1.0);
-      
-    } catch (e) {
-      print('Error playing playlist: $e');
-    }
-  }
-
   Future<void> playSong(Song song) async {
     try {
+      // Créer les métadonnées pour la notification
       final mediaItem = MediaItem(
         id: song.path,
-        album: "Album local",
+        album: "Album local", // Ajoutez si disponible
         title: song.title,
         artist: song.artist,
         duration: song.duration,
-        artUri: null,
+        artUri: null, // Ajoutez l'URI de la pochette si disponible
         displayTitle: song.title,
         displaySubtitle: song.artist,
-        playable: true,
-        displayDescription: "En cours de lecture",
       );
 
-      // Mettre à jour la playlist avec un seul morceau
-      _playlistManager.setPlaylist([song]);
-
+      // Configurer la source audio avec les métadonnées
       await _audioPlayer.setAudioSource(
         AudioSource.file(
           song.path,
@@ -120,12 +78,35 @@ class AudioPlayerService {
       await _audioPlayer.play();
       _currentSong = song;
       _currentSongController.add(song);
-
-      // Configurer la vitesse de lecture
-      await _audioPlayer.setSpeed(1.0);
-      
     } catch (e) {
       print('Error playing song: $e');
+    }
+  }
+
+  Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
+    try {
+      final playlist = ConcatenatingAudioSource(
+        children: songs.map((song) {
+          return AudioSource.file(
+            song.path,
+            tag: MediaItem(
+              id: song.path,
+              title: song.title,
+              artist: song.artist,
+              duration: song.duration,
+              artUri: null,
+              extras: {'file_path': song.path},
+            ),
+          );
+        }).toList(),
+      );
+
+      await _audioPlayer.setAudioSource(playlist, initialIndex: initialIndex);
+      await _audioPlayer.play();
+      _currentSong = songs[initialIndex];
+      _currentSongController.add(_currentSong);
+    } catch (e) {
+      print('Error playing playlist: $e');
     }
   }
 
