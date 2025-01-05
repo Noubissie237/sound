@@ -74,7 +74,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                        "Cliquez ici pour commencer la lecture aléatoire de votre album",
+                        "Cliquez ici si vous souhaitez commencer ou arrêter la lecture aléatoire de votre album",
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white),
                       ),
