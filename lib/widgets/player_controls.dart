@@ -67,7 +67,6 @@ class _PlayerControlsState extends State<PlayerControls> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Barre de progression
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -95,7 +94,6 @@ class _PlayerControlsState extends State<PlayerControls> {
           ),
         ),
 
-        // Contrôles de lecture
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

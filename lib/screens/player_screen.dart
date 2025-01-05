@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/services/audio_player_service.dart';
 import 'package:sound/widgets/audio_visualizer.dart';
@@ -32,19 +33,14 @@ class PlayerScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              // Bouton de lecture aléatoire
               IconButton(
                 icon: const Icon(Icons.shuffle),
                 tooltip: 'Lecture aléatoire',
                 onPressed: () {
-                  // Obtenir toutes les chansons de la playlist
                   final songs = [...playerService.playlistManager.playlist];
-                  // Les mélanger
                   songs.shuffle();
-                  // Commencer la lecture
                   if (songs.isNotEmpty) {
                     playerService.playPlaylist(songs);
-                    // Activer le mode shuffle
                     playerService.toggleShuffle();
                   }
                 },
@@ -78,7 +74,7 @@ class PlayerScreen extends StatelessWidget {
                       _showSongInfo(context, currentSong);
                       break;
                     case 'share':
-                      // Implémenter le partage
+                      Share.shareXFiles([XFile(currentSong.path)]);
                       break;
                   }
                 },

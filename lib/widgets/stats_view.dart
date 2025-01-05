@@ -5,9 +5,9 @@ class StatsView extends StatefulWidget {
   final UserPreferencesService preferencesService;
 
   const StatsView({
-    Key? key,
+    super.key,
     required this.preferencesService,
-  }) : super(key: key);
+  });
 
   @override
   State<StatsView> createState() => _StatsViewState();
@@ -79,20 +79,16 @@ class _StatsViewState extends State<StatsView> {
     final monthStats = _stats[currentMonthKey];
     if (monthStats == null) return 'Aucun';
 
-    // Logique pour trouver l'artiste le plus écouté
     final Map<String, int> artistPlays = {};
     final songPlays = monthStats['songPlays'] as Map<String, dynamic>;
     
-    // Compte le nombre de lectures par artiste
     songPlays.forEach((songPath, plays) {
-      // Vous devrez adapter cette partie selon votre structure de données
       final artist = songPath.split('/').last.split('-')[0];
       artistPlays[artist] = (artistPlays[artist] ?? 0) + (plays as int);
     });
 
     if (artistPlays.isEmpty) return 'Aucun';
 
-    // Trouve l'artiste avec le plus de lectures
     final topArtist = artistPlays.entries
         .reduce((a, b) => a.value > b.value ? a : b)
         .key;

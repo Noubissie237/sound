@@ -20,7 +20,7 @@ class UserPreferencesService {
       'lastPlayed': DateTime.now().toIso8601String(),
     };
     
-    // Éviter les doublons récents (moins de 1 heure)
+    // Pour éviter les doublons récents (moins de 1 heure)
     history.removeWhere((item) {
       final lastPlayed = DateTime.parse(item['lastPlayed']);
       return item['path'] == song.path &&

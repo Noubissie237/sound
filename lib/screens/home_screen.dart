@@ -53,13 +53,11 @@ class _HomeScreenState extends State<HomeScreen>
       if (Platform.isAndroid) {
         final deviceInfo = await DeviceInfoPlugin().androidInfo;
         if (deviceInfo.version.sdkInt >= 33) {
-          // Android 13 et supérieur
           final audioStatus = await Permission.audio.request();
           setState(() {
             _hasPermission = audioStatus.isGranted;
           });
         } else {
-          // Android 12 et inférieur
           final storageStatus = await Permission.storage.request();
           setState(() {
             _hasPermission = storageStatus.isGranted;
@@ -135,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             actions: [
-              // Bouton Shuffle avec animation
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
@@ -143,7 +140,6 @@ class _HomeScreenState extends State<HomeScreen>
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              // Bouton Playlist
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
@@ -168,7 +164,6 @@ class _HomeScreenState extends State<HomeScreen>
                   },
                 ),
               ),
-              // Bouton Theme avec animation
               Container(
                 margin: const EdgeInsets.only(right: 8, left: 4),
                 decoration: BoxDecoration(

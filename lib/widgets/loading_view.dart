@@ -23,7 +23,6 @@ class _LoadingViewState extends State<LoadingView>
       vsync: this,
     )..repeat();
 
-    // Correction des intervalles pour s'assurer qu'ils restent entre 0.0 et 1.0
     for (int i = 0; i < 4; i++) {
       _animations.add(
         Tween<double>(begin: 0.2, end: 1.0).animate(
@@ -84,7 +83,6 @@ class _LoadingViewState extends State<LoadingView>
             ),
             const SizedBox(height: 32),
 
-            // Barres d'égaliseur animées
             SizedBox(
               height: 50,
               child: Row(

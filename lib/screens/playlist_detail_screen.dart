@@ -19,20 +19,19 @@ class PlaylistDetailScreen extends StatefulWidget {
 }
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
-  // ignore: unused_field
-  late AudioPlayerService _playerService;
+  late AudioPlayerService playerService;
   List<Song> _playlistSongs = [];
 
   @override
   void initState() {
     super.initState();
-    _playerService = AudioPlayerService();
+    playerService = AudioPlayerService();
     _loadPlaylistSongs();
   }
 
   Future<void> _loadPlaylistSongs() async {
     // Charger les chansons de la playlist
-    // Note: Il faudrait implémenter une méthode pour récupérer les chansons par ID
+    // Note: plus tard, je vais implémenter une méthode pour récupérer les chansons par ID
     setState(() {
       // _playlistSongs = ...
     });
@@ -84,7 +83,6 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   }
 
   Future<void> _addSongs() async {
-    // Implémenter la sélection de chansons à ajouter
     await showDialog(
       context: context,
       builder: (context) => const AlertDialog(

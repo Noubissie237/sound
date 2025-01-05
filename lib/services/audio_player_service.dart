@@ -20,14 +20,12 @@ class AudioPlayerService {
   List<int>? _shuffleIndices;
 
   AudioPlayerService() {
-    // Écouter les changements d'état du player
     _audioPlayer.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         playNext();
       }
     });
 
-    // S'assurer que le stream est mis à jour quand la chanson change
     _audioPlayer.currentIndexStream.listen((index) {
       if (index != null && _playlist != null) {
         final audioSource = _playlist!.children[index] as IndexedAudioSource;
@@ -41,8 +39,7 @@ class AudioPlayerService {
       }
     });
 
-    // Configurer les commandes de notification
-    _audioPlayer.androidAudioSessionId; // Active la session audio
+    _audioPlayer.androidAudioSessionId; 
     _audioPlayer.setSkipSilenceEnabled(false);
   }
 
@@ -74,10 +71,8 @@ class AudioPlayerService {
   void toggleShuffle() {
     _isShuffleEnabled = !_isShuffleEnabled;
     if (_isShuffleEnabled) {
-      // Créer une liste d'indices mélangés
       _shuffleIndices =
           List.generate(_playlistManager.playlist.length, (i) => i)..shuffle();
-      // Garder la chanson actuelle comme première
       if (_audioPlayer.currentIndex != null) {
         final currentIndex = _audioPlayer.currentIndex!;
         _shuffleIndices!.remove(currentIndex);
@@ -91,7 +86,6 @@ class AudioPlayerService {
 
   Future<void> playSong(Song song) async {
     try {
-      // Créer une playlist avec toutes les chansons, en commençant par celle sélectionnée
       List<Song> allSongs = [..._playlistManager.playlist];
       if (!allSongs.contains(song)) {
         allSongs = [song, ...allSongs];

@@ -5,30 +5,24 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:sound/models/song.dart';
 
 class AudioScanner {
-  // Singleton instance
-  static AudioScanner? _instance;
-  // Cache des songs
+  
+  static AudioScanner? _instance; 
   List<Song>? _cachedSongs;
-  // Flag pour suivre si un scan est en cours
   bool _isScanning = false;
 
-  // Constructeur privé
   AudioScanner._();
 
-  // Méthode factory pour obtenir l'instance
   factory AudioScanner() {
     _instance ??= AudioScanner._();
     return _instance!;
   }
 
   Future<List<Song>> scanDevice() async {
-    // Si nous avons déjà des songs en cache, les retourner
     if (_cachedSongs != null) {
       print("Returning cached songs: ${_cachedSongs!.length} songs");
       return _cachedSongs!;
     }
 
-    // Si un scan est déjà en cours, attendre qu'il se termine
     if (_isScanning) {
       print("Scan already in progress, waiting...");
       while (_isScanning) {
@@ -112,14 +106,12 @@ class AudioScanner {
     return _cachedSongs ?? [];
   }
 
-  // Méthode pour forcer un nouveau scan
   Future<List<Song>> rescan() async {
     print("Forcing rescan...");
     _cachedSongs = null;
     return scanDevice();
   }
 
-  // Méthode pour vider le cache
   void clearCache() {
     print("Clearing song cache");
     _cachedSongs = null;

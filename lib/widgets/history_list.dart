@@ -8,9 +8,9 @@ class HistoryList extends StatefulWidget {
   final UserPreferencesService preferencesService;
 
   const HistoryList({
-    Key? key,
+    super.key,
     required this.preferencesService,
-  }) : super(key: key);
+  });
 
   @override
   State<HistoryList> createState() => _HistoryListState();
@@ -88,7 +88,6 @@ class _HistoryListState extends State<HistoryList> {
         final lastPlayed = DateTime.parse(item['lastPlayed']);
         final date = DateFormat.yMMMd('fr_FR').format(lastPlayed);
 
-        // Créer un header pour chaque nouvelle date
         Widget? header;
         if (currentDate != date) {
           currentDate = date;

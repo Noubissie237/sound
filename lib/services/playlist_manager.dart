@@ -4,7 +4,6 @@ class PlaylistManager {
   final List<Song> _playlist = [];
   int _currentIndex = -1;
 
-  // Getters
   List<Song> get playlist => List.unmodifiable(_playlist);
   Song? get currentSong => _currentIndex >= 0 ? _playlist[_currentIndex] : null;
   bool get hasNext => _playlist.isNotEmpty;
@@ -19,14 +18,14 @@ class PlaylistManager {
   Song? nextSong() {
     if (_playlist.isEmpty) return null;
     _currentIndex =
-        (_currentIndex + 1) % _playlist.length; // Circular navigation
+        (_currentIndex + 1) % _playlist.length; 
     return currentSong;
   }
 
   Song? previousSong() {
     if (_playlist.isEmpty) return null;
     _currentIndex = (_currentIndex - 1 + _playlist.length) %
-        _playlist.length; // Circular navigation
+        _playlist.length; 
     return currentSong;
   }
 

@@ -2,7 +2,7 @@ class Playlist {
   String id;
   String name;
   String? description;
-  List<String> songIds; // Liste des IDs des chansons
+  List<String> songIds; 
   DateTime createdAt;
   DateTime updatedAt;
 

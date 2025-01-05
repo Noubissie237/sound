@@ -59,11 +59,10 @@ class _SongListState extends State<SongList> {
   void _handleSearch() {
     final searchTerm = _searchController.text.toLowerCase();
     if (searchTerm.isEmpty) {
-      _filterSongs(); // Revenir au filtrage normal si la recherche est vide
+      _filterSongs();
       return;
     }
 
-    // Filtrer d'abord selon le filtre actif
     List<Song> filteredSongs;
     switch (widget.filter) {
       case SongListFilter.favorites:
@@ -84,7 +83,6 @@ class _SongListState extends State<SongList> {
         break;
     }
 
-    // Appliquer ensuite le filtre de recherche
     setState(() {
       _displayedSongs = filteredSongs.where((song) {
         return song.title.toLowerCase().contains(searchTerm) ||
@@ -92,7 +90,6 @@ class _SongListState extends State<SongList> {
       }).toList();
     });
 
-    // Mettre à jour la playlist avec les résultats de la recherche
     _playerService.playlistManager.setPlaylist(_displayedSongs);
   }
 
@@ -130,7 +127,6 @@ class _SongListState extends State<SongList> {
         _displayedSongs = _allSongs;
         break;
     }
-    // Mettre à jour la playlist avec les chansons filtrées
     _playerService.playlistManager.setPlaylist(_displayedSongs);
     setState(() {});
   }
@@ -141,7 +137,7 @@ class _SongListState extends State<SongList> {
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _filterSongs(); // Initial filtering
+        _filterSongs(); 
       });
     }
   }
@@ -198,7 +194,6 @@ class _SongListState extends State<SongList> {
   Future<void> _playSong(Song song) async {
     try {
       final index = _displayedSongs.indexOf(song);
-      // Utiliser les chansons filtrées pour la playlist
       _playerService.playlistManager
           .setPlaylist(_displayedSongs, startIndex: index);
       await _playerService.playSong(song);
@@ -254,7 +249,6 @@ class _SongListState extends State<SongList> {
 
   Future<void> _toggleFavorite(Song song) async {
     await _preferencesService.toggleFavorite(song);
-    // Mettre à jour l'historique d'écoute
     await _preferencesService.addToHistory(song);
     setState(() {}); // Rafraîchir l'UI
     _showSuccessSnackBar(
@@ -318,7 +312,6 @@ class _SongListState extends State<SongList> {
   }
 
   Future<void> _handlePlayNow(Song song, int index) async {
-    // Utiliser les chansons filtrées pour la playlist
     _playerService.playlistManager
         .setPlaylist(_displayedSongs, startIndex: index);
     await _playerService.playSong(song);
@@ -347,7 +340,7 @@ class _SongListState extends State<SongList> {
     );
 
     if (newTitle != null && newTitle.isNotEmpty) {
-      // Implémenter la logique de renommage
+      // Implémentation à venir
       _showSuccessSnackBar('Chanson renommée');
     }
   }
@@ -447,7 +440,6 @@ class _SongListState extends State<SongList> {
     }
   }
 
-  // Modifier le widget buildHeader pour inclure la barre de recherche
   Widget buildHeader({required String title, required String subtitle}) {
     return Column(
       children: [

@@ -100,7 +100,6 @@ class _MiniPlayerState extends State<MiniPlayer>
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
-              // Background Progress Indicator
               Positioned.fill(
                 child: AnimatedBuilder(
                   animation: _slideAnimation,
@@ -113,11 +112,9 @@ class _MiniPlayerState extends State<MiniPlayer>
                   },
                 ),
               ),
-              // Content
               Row(
                 children: [
                   const SizedBox(width: 16),
-                  // Album Art Placeholder with Animation
                   Container(
                     width: 48,
                     height: 48,
@@ -140,7 +137,6 @@ class _MiniPlayerState extends State<MiniPlayer>
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Song Info
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -169,7 +165,6 @@ class _MiniPlayerState extends State<MiniPlayer>
                       ],
                     ),
                   ),
-                  // Playback Controls
                   Row(
                     children: [
                       _buildControlButton(

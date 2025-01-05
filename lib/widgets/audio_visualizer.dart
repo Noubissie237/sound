@@ -37,7 +37,6 @@ class _AudioVisualizerState extends State<AudioVisualizer>
       ),
     );
 
-    // S'abonner aux changements d'état du lecteur
     _playerStateSubscription =
         widget.playerService.playerStateStream.listen((state) {
       final bool shouldPlay = state.playing;
@@ -53,7 +52,6 @@ class _AudioVisualizerState extends State<AudioVisualizer>
       }
     });
 
-    // Vérifier l'état initial
     widget.playerService.playerStateStream.first.then((state) {
       if (state.playing) {
         _isPlaying = true;
@@ -63,10 +61,8 @@ class _AudioVisualizerState extends State<AudioVisualizer>
   }
 
   void _startAnimations() {
-    // Arrêter le timer existant s'il y en a un
     _animationTimer?.cancel();
 
-    // Réinitialiser et démarrer les animations
     for (var controller in _controllers) {
       controller.value = 0.3;
     }
@@ -93,7 +89,6 @@ class _AudioVisualizerState extends State<AudioVisualizer>
     _animationTimer?.cancel();
     _animationTimer = null;
 
-    // Animer toutes les barres vers leur position de repos
     for (var controller in _controllers) {
       controller.animateTo(0.3, duration: const Duration(milliseconds: 300));
     }

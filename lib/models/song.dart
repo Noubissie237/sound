@@ -15,7 +15,6 @@ class Song {
     required this.duration,
   });
 
-  // Conversion en JSON pour le stockage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -27,7 +26,6 @@ class Song {
     };
   }
 
-  // Construction depuis JSON
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
       id: json['id'],
@@ -39,7 +37,6 @@ class Song {
     );
   }
 
-  // Égalité basée sur le path qui est unique
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
