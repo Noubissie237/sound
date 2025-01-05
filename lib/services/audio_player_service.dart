@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sound/models/repeat_mode.dart';
 import 'package:sound/models/song.dart';
 import 'package:sound/services/playlist_manager.dart';
+import 'package:sound/utils/utils.dart';
 
 class AudioPlayerService {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -79,25 +77,6 @@ class AudioPlayerService {
     } catch (e) {
       print('Error playing song: $e');
     }
-  }
-
-  Future<String> getLocalImagePath(String assetPath) async {
-    // Charger l'image depuis les assets
-    final byteData = await rootBundle.load(assetPath);
-
-    // Obtenir le répertoire temporaire
-    final tempDir = await getTemporaryDirectory();
-
-    // Définir un chemin pour l'image temporaire
-    final filePath = '${tempDir.path}/${assetPath.split('/').last}';
-
-    // Écrire l'image dans un fichier temporaire
-    final file = File(filePath);
-    if (!(await file.exists())) {
-      await file.writeAsBytes(byteData.buffer.asUint8List());
-    }
-
-    return filePath;
   }
 
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
