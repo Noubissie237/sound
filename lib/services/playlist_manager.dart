@@ -7,8 +7,8 @@ class PlaylistManager {
   // Getters
   List<Song> get playlist => List.unmodifiable(_playlist);
   Song? get currentSong => _currentIndex >= 0 ? _playlist[_currentIndex] : null;
-  bool get hasNext => _currentIndex < _playlist.length - 1;
-  bool get hasPrevious => _currentIndex > 0;
+  bool get hasNext => _playlist.isNotEmpty;
+  bool get hasPrevious => _playlist.isNotEmpty;
 
   void setPlaylist(List<Song> songs, {int startIndex = 0}) {
     _playlist.clear();
@@ -17,19 +17,17 @@ class PlaylistManager {
   }
 
   Song? nextSong() {
-    if (hasNext) {
-      _currentIndex++;
-      return currentSong;
-    }
-    return null;
+    if (_playlist.isEmpty) return null;
+    _currentIndex =
+        (_currentIndex + 1) % _playlist.length; // Circular navigation
+    return currentSong;
   }
 
   Song? previousSong() {
-    if (hasPrevious) {
-      _currentIndex--;
-      return currentSong;
-    }
-    return null;
+    if (_playlist.isEmpty) return null;
+    _currentIndex = (_currentIndex - 1 + _playlist.length) %
+        _playlist.length; // Circular navigation
+    return currentSong;
   }
 
   void addSong(Song song) {
@@ -38,10 +36,12 @@ class PlaylistManager {
 
   void removeSong(Song song) {
     final index = _playlist.indexOf(song);
-    if (index <= _currentIndex) {
-      _currentIndex--;
+    if (index != -1) {
+      if (index <= _currentIndex) {
+        _currentIndex--;
+      }
+      _playlist.removeAt(index);
     }
-    _playlist.remove(song);
   }
 
   void shuffle() {

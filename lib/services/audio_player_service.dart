@@ -116,6 +116,11 @@ class AudioPlayerService {
       if (_audioPlayer.hasNext) {
         await _audioPlayer.seekToNext();
       } else if (_repeatMode == RepeatMode.all) {
+        // Navigation circulaire en mode repeat all
+        await _audioPlayer.seek(Duration.zero, index: 0);
+      } else if (_repeatMode == RepeatMode.off &&
+          _playlistManager.playlist.isNotEmpty) {
+        // Navigation circulaire sans repeat
         await _audioPlayer.seek(Duration.zero, index: 0);
       }
     } catch (e) {
@@ -125,20 +130,12 @@ class AudioPlayerService {
 
   Future<void> playPrevious() async {
     try {
-      // Si on est au-delà de 3 secondes dans la chanson actuelle,
-      // on revient au début de celle-ci
-      if (await _audioPlayer.position >= const Duration(seconds: 3)) {
-        await _audioPlayer.seek(Duration.zero);
-      }
-      // Sinon, on va à la chanson précédente
-      else if (_audioPlayer.hasPrevious) {
+      if (_audioPlayer.hasPrevious) {
         await _audioPlayer.seekToPrevious();
-      }
-      // Si on est au début de la première chanson et en mode repeat all,
-      // on va à la dernière chanson
-      else if (_repeatMode == RepeatMode.all && _playlist != null) {
+      } else if (_playlistManager.playlist.isNotEmpty) {
+        // Navigation circulaire vers la fin
         await _audioPlayer.seek(Duration.zero,
-            index: _playlist!.children.length - 1);
+            index: _playlistManager.playlist.length - 1);
       }
     } catch (e) {
       print('Error playing previous song: $e');
