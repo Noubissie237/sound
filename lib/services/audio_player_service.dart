@@ -14,6 +14,11 @@ class AudioPlayerService {
   final _currentSongController = StreamController<Song?>.broadcast();
   Song? _currentSong;
 
+  bool _isShuffleEnabled = false;
+  bool get isShuffleEnabled => _isShuffleEnabled;
+
+  List<int>? _shuffleIndices;
+
   AudioPlayerService() {
     // Écouter les changements d'état du player
     _audioPlayer.playerStateStream.listen((state) {
@@ -66,6 +71,24 @@ class AudioPlayerService {
     }
   }
 
+  void toggleShuffle() {
+    _isShuffleEnabled = !_isShuffleEnabled;
+    if (_isShuffleEnabled) {
+      // Créer une liste d'indices mélangés
+      _shuffleIndices =
+          List.generate(_playlistManager.playlist.length, (i) => i)..shuffle();
+      // Garder la chanson actuelle comme première
+      if (_audioPlayer.currentIndex != null) {
+        final currentIndex = _audioPlayer.currentIndex!;
+        _shuffleIndices!.remove(currentIndex);
+        _shuffleIndices!.insert(0, currentIndex);
+      }
+    } else {
+      _shuffleIndices = null;
+    }
+    _audioPlayer.setShuffleModeEnabled(_isShuffleEnabled);
+  }
+
   Future<void> playSong(Song song) async {
     try {
       // Créer une playlist avec toutes les chansons, en commençant par celle sélectionnée
@@ -115,14 +138,24 @@ class AudioPlayerService {
 
   Future<void> playNext() async {
     try {
+      if (_isShuffleEnabled && _shuffleIndices != null) {
+        final currentIndex = _audioPlayer.currentIndex;
+        if (currentIndex != null) {
+          final currentShuffleIndex = _shuffleIndices!.indexOf(currentIndex);
+          if (currentShuffleIndex < _shuffleIndices!.length - 1) {
+            final nextIndex = _shuffleIndices![currentShuffleIndex + 1];
+            await _audioPlayer.seek(Duration.zero, index: nextIndex);
+            return;
+          }
+        }
+      }
+
       if (_audioPlayer.hasNext) {
         await _audioPlayer.seekToNext();
       } else if (_repeatMode == RepeatMode.all) {
-        // Navigation circulaire en mode repeat all
         await _audioPlayer.seek(Duration.zero, index: 0);
       } else if (_repeatMode == RepeatMode.off &&
           _playlistManager.playlist.isNotEmpty) {
-        // Navigation circulaire sans repeat
         await _audioPlayer.seek(Duration.zero, index: 0);
       }
     } catch (e) {
@@ -132,10 +165,21 @@ class AudioPlayerService {
 
   Future<void> playPrevious() async {
     try {
+      if (_isShuffleEnabled && _shuffleIndices != null) {
+        final currentIndex = _audioPlayer.currentIndex;
+        if (currentIndex != null) {
+          final currentShuffleIndex = _shuffleIndices!.indexOf(currentIndex);
+          if (currentShuffleIndex > 0) {
+            final previousIndex = _shuffleIndices![currentShuffleIndex - 1];
+            await _audioPlayer.seek(Duration.zero, index: previousIndex);
+            return;
+          }
+        }
+      }
+
       if (_audioPlayer.hasPrevious) {
         await _audioPlayer.seekToPrevious();
       } else if (_playlistManager.playlist.isNotEmpty) {
-        // Navigation circulaire vers la fin
         await _audioPlayer.seek(Duration.zero,
             index: _playlistManager.playlist.length - 1);
       }

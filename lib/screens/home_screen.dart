@@ -22,14 +22,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   bool _hasPermission = false;
-  late final AudioPlayerService _playerService;
+  late final AudioPlayerService playerService;
   late final TabController _tabController;
   late final UserPreferencesService preferencesService;
 
   @override
   void initState() {
     super.initState();
-    _playerService = AudioPlayerService();
+    playerService = AudioPlayerService();
     _tabController = TabController(length: 4, vsync: this);
     _initializeServices();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,14 +141,6 @@ class _HomeScreenState extends State<HomeScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.shuffle),
-                  tooltip: 'Mélanger',
-                  onPressed: () {
-                    _playerService.playlistManager.shuffle();
-                    setState(() {});
-                  },
                 ),
               ),
               // Bouton Playlist

@@ -17,7 +17,6 @@ class PlayerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Song?>(
-      // Ajoutez cette méthode dans AudioPlayerService pour obtenir la chanson en cours
       stream: playerService.currentSongStream,
       initialData: initialSong,
       builder: (context, snapshot) {
@@ -33,17 +32,72 @@ class PlayerScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              // Bouton de lecture aléatoire
               IconButton(
-                icon: const Icon(Icons.playlist_play),
+                icon: const Icon(Icons.shuffle),
+                tooltip: 'Lecture aléatoire',
                 onPressed: () {
-                  // Implémenter l'ouverture de la playlist
+                  // Obtenir toutes les chansons de la playlist
+                  final songs = [...playerService.playlistManager.playlist];
+                  // Les mélanger
+                  songs.shuffle();
+                  // Commencer la lecture
+                  if (songs.isNotEmpty) {
+                    playerService.playPlaylist(songs);
+                    // Activer le mode shuffle
+                    playerService.toggleShuffle();
+                  }
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.more_vert),
+                icon: const Icon(Icons.playlist_play),
                 onPressed: () {
-                  // Implémenter le menu d'options
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      child: PlaylistView(
+                        playerService: playerService,
+                        currentSong: currentSong,
+                      ),
+                    ),
+                  );
                 },
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'info':
+                      _showSongInfo(context, currentSong);
+                      break;
+                    case 'share':
+                      // Implémenter le partage
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'info',
+                    child: ListTile(
+                      leading: Icon(Icons.info_outline),
+                      title: Text('Informations'),
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                      leading: Icon(Icons.share),
+                      title: Text('Partager'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -62,7 +116,6 @@ class PlayerScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const Spacer(),
-                  // Visualiseur audio avec animation
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 500),
                     transitionBuilder:
@@ -81,32 +134,39 @@ class PlayerScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Informations sur la chanson avec animation
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      return SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.0, 0.2),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutCubic,
-                        )),
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
+                  StreamBuilder<bool>(
+                    stream: playerService.playerStateStream
+                        .map((_) => playerService.isShuffleEnabled),
+                    initialData: playerService.isShuffleEnabled,
+                    builder: (context, shuffleSnapshot) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.0, 0.2),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            )),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _SongInfo(
+                          key: ValueKey(
+                              'info-${currentSong.id}-${shuffleSnapshot.data}'),
+                          song: currentSong,
+                          isShuffleEnabled: shuffleSnapshot.data ?? false,
                         ),
                       );
                     },
-                    child: _SongInfo(
-                      key: ValueKey('info-${currentSong.id}'),
-                      song: currentSong,
-                    ),
                   ),
                   const SizedBox(height: 24),
-                  // Contrôles du lecteur
                   PlayerControls(
                     playerService: playerService,
                     song: currentSong,
@@ -120,14 +180,46 @@ class PlayerScreen extends StatelessWidget {
       },
     );
   }
+
+  void _showSongInfo(BuildContext context, Song song) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Informations'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Titre: ${song.title}'),
+            const SizedBox(height: 8),
+            Text('Artiste: ${song.artist}'),
+            if (song.album.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Album: ${song.album}'),
+            ],
+            const SizedBox(height: 8),
+            Text('Durée: ${song.duration.toString().split('.').first}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SongInfo extends StatelessWidget {
   final Song song;
+  final bool isShuffleEnabled;
 
   const _SongInfo({
     super.key,
     required this.song,
+    required this.isShuffleEnabled,
   });
 
   @override
@@ -163,8 +255,68 @@ class _SongInfo extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+          if (isShuffleEnabled) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Mode aléatoire activé',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                  ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class PlaylistView extends StatelessWidget {
+  final AudioPlayerService playerService;
+  final Song currentSong;
+
+  const PlaylistView({
+    super.key,
+    required this.playerService,
+    required this.currentSong,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'File de lecture',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: playerService.playlistManager.playlist.length,
+            itemBuilder: (context, index) {
+              final song = playerService.playlistManager.playlist[index];
+              final isPlaying = song.path == currentSong.path;
+
+              return ListTile(
+                leading: isPlaying
+                    ? Icon(Icons.music_note,
+                        color: Theme.of(context).primaryColor)
+                    : const Icon(Icons.music_note_outlined),
+                title: Text(
+                  song.title,
+                  style: TextStyle(
+                    fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                    color: isPlaying ? Theme.of(context).primaryColor : null,
+                  ),
+                ),
+                subtitle: Text(song.artist),
+                onTap: () => playerService.playSong(song),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
